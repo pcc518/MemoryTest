@@ -9,6 +9,10 @@
 #import "ViewController.h"
 
 @interface ViewController ()
+@property (weak, nonatomic) IBOutlet UILabel *totalMemoryLabel;
+@property (weak, nonatomic) IBOutlet UILabel *userMemoryLabel;
+@property (weak, nonatomic) IBOutlet UIView *allocatedMemoryView;
+@property (weak, nonatomic) IBOutlet UIView *kernelMemoryView;
 
 @end
 
@@ -19,6 +23,8 @@
     // Do any additional setup after loading the view, typically from a nib.
 }
 
+- (IBAction)startNewTest:(UIButton *)sender {
+}
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
