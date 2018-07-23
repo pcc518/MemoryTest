@@ -4,5 +4,5 @@
 
 ## ScreenShots
 
-![Example](https://github.com/pcc518/MemoryTest.git/Screen/MomeryTest.png)
-![Example](https://github.com/pcc518/MemoryTest.git/Screen/MomeryTest.gif)
+![Example](https://github.com/pcc518/MemoryTest.git/MemoryTest/Screen/MomeryTest.png)
+![Example](https://github.com/pcc518/MemoryTest.git/MemoryTest/Screen/MomeryTest.gif)
