@@ -4,5 +4,5 @@
 
 ## ScreenShots
 
-![MemoryTest](./Screen/MomeryTest.png "MemoryTest View")
-![MemoryTest](./Screen/MomeryTest.gif "MemoryTest View")
+![Example](https://github.com/pcc518/MemoryTest.git/Screen/MomeryTest.png)
+![Example](https://github.com/pcc518/MemoryTest.git/Screen/MomeryTest.gif)
