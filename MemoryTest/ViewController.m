@@ -10,8 +10,8 @@
 #import <sys/types.h>
 #import <sys/sysctl.h>
 
-#define CRASH_MEMORY_FILE_NAME @"CrashMemory.dat"
-#define MEMORY_WARNINGS_FILE_NAME @"MemoryWarnings.dat"
+#define CRASH_MEMORY_FILE_NAME @"CrashMemory.plist"
+#define MEMORY_WARNINGS_FILE_NAME @"MemoryWarnings.plist"
 
 @interface ViewController () {
   
@@ -33,6 +33,7 @@
 @property (weak, nonatomic) IBOutlet UIView *allocatedMemoryView;
 @property (weak, nonatomic) IBOutlet UIView *kernelMemoryView;
 @property (weak, nonatomic) IBOutlet UIView *progressView;
+@property (weak, nonatomic) IBOutlet UILabel *currentMemoryLabel;
 
 @end
 
@@ -43,8 +44,10 @@
     
     infoLabels = [NSMutableArray new];
     memoryWarnings = [NSMutableArray new];
+    allocatedMB = 0;
     
 }
+
 
 - (void)viewDidLayoutSubviews {
     if (!initialLayoutFinished) {
@@ -53,15 +56,13 @@
         [self refreshUI];
         
         NSString *basePath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
-        NSInteger crashMemory = [[NSKeyedUnarchiver unarchiveObjectWithFile:[basePath stringByAppendingString:CRASH_MEMORY_FILE_NAME]] intValue];
+        NSInteger crashMemory = [[NSKeyedUnarchiver unarchiveObjectWithFile:[basePath stringByAppendingPathComponent:CRASH_MEMORY_FILE_NAME]] intValue];
         if (crashMemory > 0) {
-            [self addLabelAtMemoryProgress:crashMemory text:@"Crash" color:[UIColor lightGrayColor]];
+            [self addLabelAtMemoryProgress:crashMemory text:@"Crash" color:[UIColor redColor]];
         }
         NSArray *lastMemoryWarnings = [NSKeyedUnarchiver unarchiveObjectWithFile:[basePath stringByAppendingPathComponent:MEMORY_WARNINGS_FILE_NAME]];
         if (lastMemoryWarnings) {
-            
             for (NSNumber *number in lastMemoryWarnings) {
-                
                 [self addLabelAtMemoryProgress:[number intValue] text:@"Memory Warning" color:[UIColor redColor]];
             }
         }
@@ -81,11 +82,11 @@
     length = sizeof(int64_t);
     sysctl(mib, 2, &physicalMemorySize, &length, NULL, 0);
     
+    //
     mib[1] = HW_USERMEM;
     length = sizeof(int64_t);
     sysctl(mib, 2, &userMemorySize, &length, NULL, 0);
-    
-    
+ 
 }
 
 - (void)refreshUI {
@@ -93,9 +94,9 @@
     long physicalMemorySizeMB = physicalMemorySize / (1024 * 1024);
     long userMemorySizeMB = userMemorySize / (1024 * 1024);
     
-    self.userMemoryLabel.text = [NSString stringWithFormat:@"%ld MB -", userMemorySizeMB];
-    self.totalMemoryLabel.text = [NSString stringWithFormat:@"%ld MB -", physicalMemorySizeMB];
-    
+    self.userMemoryLabel.text = [NSString stringWithFormat:@"UserMemory %ld MB -", userMemorySizeMB];
+    self.totalMemoryLabel.text = [NSString stringWithFormat:@"PhysicalMemory %ld MB -", physicalMemorySizeMB];
+    self.currentMemoryLabel.text = [NSString stringWithFormat:@"- %d MB",allocatedMB];
     
     CGRect rect;
     
@@ -104,6 +105,7 @@
     //userMemoryLabel frame
     rect = self.userMemoryLabel.frame;
     rect.origin.y = roundf((self.progressView.bounds.size.height - userMemoryProgressLength) - self.userMemoryLabel.bounds.size.height * 0.5 + self.progressView.frame.origin.y);
+    rect.origin.x = roundf(self.progressView.frame.origin.x - self.userMemoryLabel.bounds.size.width - 5);
     self.userMemoryLabel.frame = rect;
     
     //kernelMemoryView frame
@@ -117,6 +119,10 @@
     rect.origin.y = self.progressView.bounds.size.height - rect.size.height;
     self.allocatedMemoryView.frame = rect;
     
+    rect = self.currentMemoryLabel.frame;
+    rect.origin.x = self.progressView.frame.origin.x + self.progressView.bounds.size.width + 5;
+    rect.origin.y = self.progressView.frame.origin.y + self.progressView.bounds.size.height - self.allocatedMemoryView.bounds.size.height - self.currentMemoryLabel.bounds.size.height * 0.5;
+    self.currentMemoryLabel.frame = rect;
     
 }
 
@@ -142,9 +148,10 @@
 - (IBAction)startNewTest:(UIButton *)sender {
     
     [self clearAll];
-    firstMemoryWarningReceived = NO;
     
-    timer = [NSTimer scheduledTimerWithTimeInterval:0.001 target:self selector:@selector(allocateMemory) userInfo:nil repeats:YES];
+    firstMemoryWarningReceived = NO;
+    [timer invalidate];
+    timer = [NSTimer scheduledTimerWithTimeInterval:0.02 target:self selector:@selector(allocateMemory) userInfo:nil repeats:YES];
 }
 
 - (void)allocateMemory {
@@ -170,18 +177,19 @@
     }
     
     allocatedMB = 0;
-    
     [infoLabels makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    
     [infoLabels removeAllObjects];
     
     [memoryWarnings removeAllObjects];
 }
+
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     
     firstMemoryWarningReceived = YES;
     
-    [self addLabelAtMemoryProgress:allocatedMB text:@"Memory Warning" color:[UIColor lightGrayColor]];
+    [self addLabelAtMemoryProgress:allocatedMB text:@"Memory Warning" color:[UIColor redColor]];
     
     [memoryWarnings addObject:@(allocatedMB)];
     
@@ -190,15 +198,6 @@
     [NSKeyedArchiver archiveRootObject:memoryWarnings toFile:[basePath stringByAppendingPathComponent:MEMORY_WARNINGS_FILE_NAME]];
 }
 
-- (void)dealloc {
-    
-    [timer invalidate];
-    [self clearAll];
-    
-    infoLabels = nil;
-    memoryWarnings = nil;
-    
-    initialLayoutFinished = NO;
-}
+
 
 @end
