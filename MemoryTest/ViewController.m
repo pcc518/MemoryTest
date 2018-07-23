@@ -52,7 +52,21 @@
         [self refreshMemoryInfo];
         [self refreshUI];
         
+        NSString *basePath = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+        NSInteger crashMemory = [[NSKeyedUnarchiver unarchiveObjectWithFile:[basePath stringByAppendingString:CRASH_MEMORY_FILE_NAME]] intValue];
+        if (crashMemory > 0) {
+            [self addLabelAtMemoryProgress:crashMemory text:@"Crash" color:[UIColor lightGrayColor]];
+        }
+        NSArray *lastMemoryWarnings = [NSKeyedUnarchiver unarchiveObjectWithFile:[basePath stringByAppendingPathComponent:MEMORY_WARNINGS_FILE_NAME]];
+        if (lastMemoryWarnings) {
+            
+            for (NSNumber *number in lastMemoryWarnings) {
+                
+                [self addLabelAtMemoryProgress:[number intValue] text:@"Memory Warning" color:[UIColor redColor]];
+            }
+        }
         
+        initialLayoutFinished = YES;
     }
 }
 
@@ -105,13 +119,86 @@
     
     
 }
+
+- (void)addLabelAtMemoryProgress:(NSInteger)memory text:(NSString*)text color:(UIColor*)color {
+    
+    CGFloat length = self.progressView.bounds.size.height * (1.0f - memory / (float)(physicalMemorySize / (1024 *1024)));
+    
+    CGRect rect;
+    rect.origin.x = 20;
+    rect.size.width = self.progressView.frame.origin.x - rect.origin.x - 5;
+    rect.size.height = 20;
+    rect.origin.y = roundf(self.progressView.frame.origin.y + length - rect.size.height * 0.5f);
+    
+    UILabel *label = [[UILabel alloc] initWithFrame:rect];
+    label.textAlignment = NSTextAlignmentRight;
+    label.text = [NSString stringWithFormat:@"%@ %ld MB -", text, memory];
+    label.font = self.totalMemoryLabel.font;
+    label.textColor = color;
+    
+    [infoLabels addObject:label];
+    [self.view addSubview:label];
+}
 - (IBAction)startNewTest:(UIButton *)sender {
+    
+    [self clearAll];
+    firstMemoryWarningReceived = NO;
+    
+    timer = [NSTimer scheduledTimerWithTimeInterval:0.001 target:self selector:@selector(allocateMemory) userInfo:nil repeats:YES];
 }
 
+- (void)allocateMemory {
+    
+    p[allocatedMB] = malloc(1024 * 1024);
+    memset(p[allocatedMB], 0, 1024 * 1024);
+    allocatedMB += 1;
+    
+    [self refreshMemoryInfo];
+    [self refreshUI];
+    
+    if (firstMemoryWarningReceived) {
+        NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *basePath = paths.firstObject;
+        [NSKeyedArchiver archiveRootObject:@(allocatedMB) toFile:[basePath stringByAppendingPathComponent:CRASH_MEMORY_FILE_NAME]];
+    }
+}
+
+- (void)clearAll {
+    
+    for (int i = 0; i < allocatedMB; i++) {
+        free(p[i]);
+    }
+    
+    allocatedMB = 0;
+    
+    [infoLabels makeObjectsPerformSelector:@selector(removeFromSuperview)];
+    [infoLabels removeAllObjects];
+    
+    [memoryWarnings removeAllObjects];
+}
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+    
+    firstMemoryWarningReceived = YES;
+    
+    [self addLabelAtMemoryProgress:allocatedMB text:@"Memory Warning" color:[UIColor lightGrayColor]];
+    
+    [memoryWarnings addObject:@(allocatedMB)];
+    
+    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+    NSString *basePath = paths.firstObject;
+    [NSKeyedArchiver archiveRootObject:memoryWarnings toFile:[basePath stringByAppendingPathComponent:MEMORY_WARNINGS_FILE_NAME]];
 }
 
+- (void)dealloc {
+    
+    [timer invalidate];
+    [self clearAll];
+    
+    infoLabels = nil;
+    memoryWarnings = nil;
+    
+    initialLayoutFinished = NO;
+}
 
 @end
