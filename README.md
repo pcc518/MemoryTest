@@ -4,5 +4,5 @@
 
 ## ScreenShots
 
-![Example](Screen/MomeryTest.jpeg "Example View")
-![Example](Screen/MomeryTest.gif "Example View")
+![Example](./Screen/MomeryTest.png "Example View")
+![Example](./Screen/MomeryTest.gif "Example View")
