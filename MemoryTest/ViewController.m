@@ -91,11 +91,11 @@
 
 - (void)refreshUI {
     
-    long physicalMemorySizeMB = physicalMemorySize / (1024 * 1024);
-    long userMemorySizeMB = userMemorySize / (1024 * 1024);
+    unsigned long long physicalMemorySizeMB = physicalMemorySize / (1024 * 1024);
+    unsigned long long userMemorySizeMB = userMemorySize / (1024 * 1024);
     
-    self.userMemoryLabel.text = [NSString stringWithFormat:@"UserMemory %ld MB -", userMemorySizeMB];
-    self.totalMemoryLabel.text = [NSString stringWithFormat:@"PhysicalMemory %ld MB -", physicalMemorySizeMB];
+    self.userMemoryLabel.text = [NSString stringWithFormat:@"UserMemory %llu MB -", userMemorySizeMB];
+    self.totalMemoryLabel.text = [NSString stringWithFormat:@"PhysicalMemory %llu MB -", physicalMemorySizeMB];
     self.currentMemoryLabel.text = [NSString stringWithFormat:@"- %d MB",allocatedMB];
     
     CGRect rect;
@@ -138,7 +138,7 @@
     
     UILabel *label = [[UILabel alloc] initWithFrame:rect];
     label.textAlignment = NSTextAlignmentRight;
-    label.text = [NSString stringWithFormat:@"%@ %ld MB -", text, memory];
+    label.text = [NSString stringWithFormat:@"%@ %ld MB -", text, (long)memory];
     label.font = self.totalMemoryLabel.font;
     label.textColor = color;
     
